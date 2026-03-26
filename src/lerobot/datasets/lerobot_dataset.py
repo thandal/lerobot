@@ -273,7 +273,17 @@ class LeRobotDataset(torch.utils.data.Dataset):
             # Check if cached dataset contains all requested episodes
             if not self._check_cached_episodes_sufficient():
                 raise FileNotFoundError("Cached dataset doesn't contain all requested episodes")
-        except (FileNotFoundError, NotADirectoryError):
+        except (FileNotFoundError, NotADirectoryError) as e:
+            # If local data already exists, refuse to download from hub
+            # to avoid silently overwriting local datasets
+            data_dir = self.root / "data"
+            has_local_data = data_dir.exists() and next(data_dir.glob("*/*.parquet"), None) is not None
+            if not force_cache_sync and has_local_data:
+                raise FileNotFoundError(
+                    f"Local dataset at '{self.root}' exists but failed to load: {e}. "
+                    f"Refusing to download from hub to avoid overwriting local data. "
+                    f"Use force_cache_sync=True to explicitly sync from hub."
+                ) from e
             if is_valid_version(self.revision):
                 self.revision = get_safe_version(self.repo_id, self.revision)
             self.download(download_videos)

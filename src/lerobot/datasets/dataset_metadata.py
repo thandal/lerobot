@@ -73,7 +73,17 @@ class LeRobotDatasetMetadata:
             if force_cache_sync:
                 raise FileNotFoundError
             self.load_metadata()
-        except (FileNotFoundError, NotADirectoryError):
+        except (FileNotFoundError, NotADirectoryError) as e:
+            # If local metadata already exists, refuse to download from hub
+            # to avoid silently overwriting local data
+            info_path = self.root / "meta" / "info.json"
+            if not force_cache_sync and info_path.exists():
+                raise FileNotFoundError(
+                    f"Local metadata at '{self.root}' exists but failed to load: {e}. "
+                    f"Refusing to download from hub to avoid overwriting local data. "
+                    f"Use force_cache_sync=True to explicitly sync from hub."
+                ) from e
+
             if is_valid_version(self.revision):
                 self.revision = get_safe_version(self.repo_id, self.revision)
 
