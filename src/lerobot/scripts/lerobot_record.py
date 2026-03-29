@@ -369,8 +369,7 @@ def record_loop(
             act_processed_policy: RobotAction = make_robot_action(action_values, dataset.features)
 
         elif policy is None and isinstance(teleop, Teleoperator):
-            if robot.name == "unitree_g1":
-                teleop.send_feedback(obs)
+            teleop.send_feedback(obs)
             act = teleop.get_action()
 
             # Applies a pipeline to the raw teleop action, default is IdentityProcessor
