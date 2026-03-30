@@ -131,6 +131,7 @@ from lerobot.teleoperators import (  # noqa: F401
     unitree_g1,
 )
 from lerobot.teleoperators.keyboard.teleop_keyboard import KeyboardTeleop
+from lerobot.teleoperators.utils import TeleopEvents
 from lerobot.utils.constants import ACTION, OBS_STR
 from lerobot.utils.control_utils import (
     init_keyboard_listener,
@@ -339,6 +340,19 @@ def record_loop(
     start_episode_t = time.perf_counter()
     while timestamp < control_time_s:
         start_loop_t = time.perf_counter()
+
+        if events["exit_early"]:
+            events["exit_early"] = False
+            break
+
+        # Check teleop events (e.g. VR controller buttons)
+        if isinstance(teleop, Teleoperator) and hasattr(teleop, "get_teleop_events"):
+            teleop_events = teleop.get_teleop_events()
+            if teleop_events.get(TeleopEvents.SUCCESS):
+                events["exit_early"] = True
+            if teleop_events.get(TeleopEvents.RERECORD_EPISODE):
+                events["rerecord_episode"] = True
+                events["exit_early"] = True
 
         if events["exit_early"]:
             events["exit_early"] = False
